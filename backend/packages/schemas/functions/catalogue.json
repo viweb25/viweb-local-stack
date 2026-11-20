@@ -1,0 +1,162 @@
+[
+  {
+    "id": "object_detection",
+    "name": "Object Detection",
+    "stage": "planned: core_vision",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "image_classification",
+    "name": "Image Classification",
+    "stage": "planned: core_vision",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "anomaly_detection",
+    "name": "Anomaly Detection",
+    "stage": "planned: core_vision",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "dimension_measurement",
+    "name": "Dimension Measurement",
+    "stage": "planned: industrial",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "assembly_verification",
+    "name": "Assembly Verification",
+    "stage": "planned: industrial",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "ocr",
+    "name": "OCR / Label Inspection",
+    "stage": "planned: industrial",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "object_counting",
+    "name": "Object Counting",
+    "stage": "planned: industrial",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "id": "predictive_maintenance",
+    "name": "Predictive Maintenance",
+    "stage": "planned: prototype",
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  }
+]
