@@ -7,8 +7,6 @@ from starlette.exceptions import HTTPException
 
 
 class ErrorCode(StrEnum):
-    INVALID_SIGNUP_CODE = "invalid_signup_code"
-    SIGNUP_UNAVAILABLE = "signup_unavailable"
     SIGNUP_CONFLICT = "signup_conflict"
     INFERENCE_UNAVAILABLE = "inference_unavailable"
     INVALID_CREDENTIALS = "invalid_credentials"

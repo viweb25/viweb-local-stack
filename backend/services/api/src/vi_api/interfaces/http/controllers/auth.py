@@ -1,4 +1,3 @@
-from secrets import compare_digest
 from typing import Annotated
 
 from anyio import to_thread
@@ -46,22 +45,14 @@ BrowserOrigin = Annotated[str, Depends(same_origin)]
 class SignupRequest(LoginRequest):
     password: SecretStr = Field(min_length=15, max_length=128)
     organisation: str = Field(min_length=1, max_length=200, pattern=r"\S")
-    code: SecretStr = Field(min_length=1, max_length=256)
 
 
 @router.post(
     "/signup",
     status_code=204,
-    responses={code: {"model": ErrorResponse} for code in (403, 409, 503)},
+    responses={code: {"model": ErrorResponse} for code in (403, 409)},
 )
-async def signup(
-    credentials: SignupRequest, settings: SettingsDependency, origin: BrowserOrigin
-) -> None:
-    expected = settings.signup_code.get_secret_value()
-    if len(expected) < 24:
-        raise ApiError(503, ErrorCode.SIGNUP_UNAVAILABLE, "Account registration is unavailable")
-    if not compare_digest(expected.encode(), credentials.code.get_secret_value().encode()):
-        raise ApiError(403, ErrorCode.INVALID_SIGNUP_CODE, "The signup code is incorrect")
+async def signup(credentials: SignupRequest, origin: BrowserOrigin) -> None:
     password_hash = await to_thread.run_sync(
         hash_password, credentials.password.get_secret_value(), limiter=LIMIT
     )

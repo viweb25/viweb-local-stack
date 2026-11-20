@@ -34,3 +34,18 @@ def test_missing_weights_and_invalid_jpeg_hold(monkeypatch):
         assert response.status_code == 200
         assert response.json()["decision"] == "HOLD"
         assert response.json()["detections"] == []
+
+
+def test_detection_model_lists_checkpoint_classes(monkeypatch, tmp_path):
+    weights = tmp_path / "best.pt"
+    weights.touch()
+    monkeypatch.setenv("VI_YOLO_WEIGHTS", str(weights))
+    monkeypatch.setattr(object_detection, "model_classes", lambda path: ["cap", "washer"])
+    client = TestClient(app)
+    assert client.get("/api/v1/demo/detection-model").json() == {
+        "model": "best.pt",
+        "classes": ["cap", "washer"],
+        "status": "ready",
+    }
+    weights.unlink()
+    assert client.get("/api/v1/demo/detection-model").json()["status"] == "missing"

@@ -19,7 +19,7 @@ FROM base AS yolo
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
-RUN uv pip install --python /workspace/.venv/bin/python --torch-backend cpu ultralytics
+RUN uv pip install --python /workspace/.venv/bin/python --torch-backend cpu ultralytics==8.4.216 "pyyaml>=6,<7"
 USER platform
 
 FROM base AS default

@@ -57,3 +57,25 @@ async def inspect(
         media_type="application/json",
         headers={"Cache-Control": "no-store"},
     )
+
+
+@router.get("/detection-model")
+async def detection_model(
+    settings: SettingsDependency,
+    user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> Response:
+    if not user.organisations:
+        raise ApiError(403, ErrorCode.ORGANISATION_ACCESS_DENIED, "Workspace access is required")
+    try:
+        async with httpx.AsyncClient(timeout=30, trust_env=False) as client:
+            result = await client.get(
+                f"{settings.inference_url.rstrip('/')}/api/v1/demo/detection-model"
+            )
+            result.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise ApiError(
+            503, ErrorCode.INFERENCE_UNAVAILABLE, "Inspection service unavailable"
+        ) from exc
+    return Response(
+        result.content, media_type="application/json", headers={"Cache-Control": "no-store"}
+    )

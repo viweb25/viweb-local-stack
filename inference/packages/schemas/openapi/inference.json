@@ -190,6 +190,42 @@
         "title": "InspectionResult",
         "type": "object"
       },
+      "ModelInfo": {
+        "properties": {
+          "classes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Classes",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "missing",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ModelInfo",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -305,6 +341,27 @@
           }
         },
         "summary": "Inspect Objects",
+        "tags": [
+          "Object detection"
+        ]
+      }
+    },
+    "/api/v1/demo/detection-model": {
+      "get": {
+        "operationId": "detection_model_api_v1_demo_detection_model_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Detection Model",
         "tags": [
           "Object detection"
         ]

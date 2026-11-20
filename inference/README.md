@@ -54,8 +54,16 @@ threshold on your own camera data. A count check alone cannot identify an empty
 slot or verify placement.
 
 The Vite proxy forwards inspection calls through the business backend. For local
-development, run the backend with migrated PostgreSQL, a signup code or an
-existing account, and `INFERENCE_URL=http://127.0.0.1:8001`. For Docker deployment,
+development, run the backend with migrated PostgreSQL and `INFERENCE_URL=http://127.0.0.1:8001`. For Docker deployment,
 build the `yolo` target and see the backend setup instructions. Direct
 industrial-camera triggering and physical lamp integration require the camera
 and controller interfaces.
+
+The local-stack training service runs this module with the dataset mounted
+read-only and writes the candidate checkpoint and validation output to the
+runs directory. It expects a YOLO export with directory-based splits, and
+accepts optional `--epochs`, `--imgsz`, and `--batch` overrides.
+
+```bash
+PYTHONPATH=services/inference uv run --with ultralytics --with pyyaml python -m vi_inference.train_detector --help
+```

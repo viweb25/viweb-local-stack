@@ -3,7 +3,7 @@ name: viweb-local-stack
 x-backend: &backend
   image: viweb-local-stack-backend
   build:
-    context: ./backend
+    context: ${BACKEND_CONTEXT:-./backend}
     target: base
   init: true
 
@@ -25,7 +25,7 @@ services:
       retries: 20
 
   migrate:
-    build: ./database
+    build: ${DATABASE_CONTEXT:-./database}
     environment:
       DATABASE_URL: *database-url
     depends_on:
@@ -40,30 +40,9 @@ services:
       timeout: 3s
       retries: 20
 
-  signup-code:
-    <<: *backend
-    user: "0"
-    volumes:
-      - signup:/run/viweb-signup
-    command:
-      - python
-      - -c
-      - |
-        import os
-        import secrets
-        from pathlib import Path
-
-        path = Path("/run/viweb-signup/code")
-        if not path.exists():
-            temporary = path.with_suffix(".new")
-            temporary.write_text(secrets.token_hex(24))
-            temporary.chmod(0o400)
-            os.chown(temporary, 10001, 10001)
-            temporary.replace(path)
-
   inference:
     build:
-      context: ./inference
+      context: ${INFERENCE_CONTEXT:-./inference}
       target: ${INFERENCE_TARGET:-default}
     environment:
       VI_YOLO_WEIGHTS: ${VI_YOLO_WEIGHTS:-/models/best.pt}
@@ -86,20 +65,12 @@ services:
       APP_ORIGIN: http://127.0.0.1:3000
       VI_DEMO_IMAGE_DIR: /var/lib/viweb-demo
     volumes:
-      - signup:/run/viweb-signup:ro
       - examples:/var/lib/viweb-demo
     ports:
       - "127.0.0.1:8000:8000"
-    command:
-      - sh
-      - -ec
-      - |
-        export SIGNUP_CODE="$$(cat /run/viweb-signup/code)"
-        exec uvicorn vi_api.bootstrap:app --host 0.0.0.0 --port 8000
+    command: ["uvicorn", "vi_api.bootstrap:app", "--host", "0.0.0.0", "--port", "8000"]
     depends_on:
       migrate:
-        condition: service_completed_successfully
-      signup-code:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
@@ -122,6 +93,21 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  trainer:
+    profiles: ["training"]
+    build:
+      context: ${INFERENCE_CONTEXT:-./inference}
+      target: yolo
+    user: "${TRAIN_UID:-1000}:${TRAIN_GID:-1000}"
+    working_dir: /runs
+    environment:
+      HOME: /tmp
+      YOLO_CONFIG_DIR: /tmp/ultralytics
+    volumes:
+      - ${DATASET_DIR:-./datasets}:/dataset:ro
+      - ./runs:/runs
+    entrypoint: ["python", "-m", "vi_inference.train_detector"]
+
   ollama:
     image: ollama/ollama:0.16.3
     profiles: ["vision"]
@@ -132,6 +118,5 @@ services:
 
 volumes:
   postgres:
-  signup:
   examples:
   ollama:

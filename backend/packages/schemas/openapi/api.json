@@ -222,14 +222,6 @@
       },
       "SignupRequest": {
         "properties": {
-          "code": {
-            "format": "password",
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Code",
-            "type": "string",
-            "writeOnly": true
-          },
           "email": {
             "maxLength": 254,
             "minLength": 3,
@@ -256,8 +248,7 @@
         "required": [
           "email",
           "password",
-          "organisation",
-          "code"
+          "organisation"
         ],
         "title": "SignupRequest",
         "type": "object"
@@ -532,21 +523,30 @@
               }
             },
             "description": "Validation Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Service Unavailable"
           }
         },
         "summary": "Signup",
         "tags": [
           "Identity"
+        ]
+      }
+    },
+    "/api/v1/demo/detection-model": {
+      "get": {
+        "operationId": "detection_model_api_v1_demo_detection_model_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Detection Model",
+        "tags": [
+          "Inspection"
         ]
       }
     },

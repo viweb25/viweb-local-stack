@@ -4,7 +4,7 @@ from functools import cache
 from io import BytesIO
 from pathlib import Path
 from threading import Lock
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
@@ -35,6 +35,35 @@ def load_model(weights: str):
     from ultralytics import YOLO
 
     return YOLO(weights, task="detect")
+
+
+def configured_weights() -> Path | None:
+    path = Path(os.getenv("VI_YOLO_WEIGHTS", ""))
+    return path.resolve() if path.suffix in {".pt", ".onnx"} and path.is_file() else None
+
+
+class ModelInfo(BaseModel):
+    model: str | None = None
+    classes: list[str] = Field(default_factory=list)
+    status: Literal["ready", "missing", "unavailable"]
+
+
+def model_classes(weights: str) -> list[str]:
+    with model_lock:
+        return list(load_model(weights).names.values())
+
+
+@router.get("/detection-model", response_model=ModelInfo)
+async def detection_model():
+    weights = configured_weights()
+    if weights is None:
+        return ModelInfo(status="missing")
+    try:
+        classes = await run_in_threadpool(model_classes, str(weights))
+    except Exception:
+        logger.exception("YOLO model could not be loaded")
+        return ModelInfo(status="unavailable", model=weights.name)
+    return ModelInfo(status="ready", model=weights.name, classes=classes)
 
 
 def detect(weights: str, image: bytes, target: str, confidence: float) -> list[Detection]:
@@ -83,15 +112,13 @@ async def inspect_objects(
     except ValueError as exc:
         return DetectionResult(decision="HOLD", reason=str(exc))
 
-    weights = Path(os.getenv("VI_YOLO_WEIGHTS", ""))
-    if weights.suffix not in {".pt", ".onnx"} or not weights.is_file():
+    weights = configured_weights()
+    if weights is None:
         return DetectionResult(decision="HOLD", reason="Local YOLO model is not configured.")
 
     target = target.strip()
     try:
-        detections = await run_in_threadpool(
-            detect, str(weights.resolve()), image, target, confidence
-        )
+        detections = await run_in_threadpool(detect, str(weights), image, target, confidence)
     except Exception:
         logger.exception("YOLO inspection failed")
         return DetectionResult(

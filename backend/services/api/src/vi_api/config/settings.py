@@ -1,4 +1,4 @@
-from pydantic import Field, SecretStr
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,4 +9,3 @@ class Settings(BaseSettings):
     redis_cache_url: str = ""
     demo_image_dir: str = Field(default="", validation_alias="VI_DEMO_IMAGE_DIR")
     app_origin: str = "http://127.0.0.1:3000"
-    signup_code: SecretStr = SecretStr("")
