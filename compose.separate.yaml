@@ -1,0 +1,66 @@
+# Compose override for sibling, independently cloned repositories.
+x-yolo-image: &yolo-image
+  image: viweb-separate-yolo
+  build:
+    context: ../viweb-inference
+    target: yolo
+
+services:
+  migrate:
+    build:
+      context: ../viweb-db
+
+  api:
+    build:
+      context: ../viweb-ai
+
+  worker:
+    build:
+      context: ../viweb-ai
+
+  inference:
+    <<: *yolo-image
+    depends_on:
+      prepare-model:
+        condition: service_completed_successfully
+    volumes:
+      - starter-model:/var/lib/viweb-demo:ro
+    command:
+      - sh
+      - -ec
+      - |
+        if [ "$${VI_YOLO_WEIGHTS}" = /models/best.pt ] && [ ! -f /models/best.pt ]; then
+          export VI_YOLO_WEIGHTS=/var/lib/viweb-demo/yolo11n.pt
+        fi
+        exec uvicorn vi_inference.main:app --host 0.0.0.0 --port 8001
+
+  prepare-model:
+    <<: *yolo-image
+    volumes:
+      - ./models:/models:ro
+      - starter-model:/var/lib/viweb-demo
+    command:
+      - python
+      - -c
+      - |
+        import os
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        root = Path('/var/lib/viweb-demo')
+        starter = root / 'yolo11n.pt'
+        if not Path('/models/best.pt').is_file() and not starter.is_file():
+            from ultralytics import YOLO
+
+            with TemporaryDirectory(dir=root) as directory:
+                os.chdir(directory)
+                YOLO(starter.name)
+                Path(starter.name).replace(starter)
+            print("Starter detector ready. Choose person for a camera test.")
+
+  trainer:
+    build:
+      context: ../viweb-inference
+
+volumes:
+  starter-model:

@@ -112,3 +112,53 @@ Use the `inspection-onboarding` branch in `viweb-ai` and the matching
 revisions of the other repositories. With current checkouts, startup is
 still `docker compose up -d --build --wait` here and `npm run dev` in
 `viweb-frontend`. Frontend installation uses `npm ci` once per checkout.
+
+## First camera test from separate GitHub repositories
+
+Install Git, Docker with Compose, and Node.js 22. Run on the computer connected
+to the camera. Clone the repositories side by side:
+
+```bash
+mkdir viweb-workspace
+cd viweb-workspace
+git clone https://github.com/viweb25/viweb-local-stack.git
+git clone --branch inspection-onboarding https://github.com/viweb25/viweb-ai.git
+git clone https://github.com/viweb25/viweb-db.git
+git clone https://github.com/viweb25/viweb-inference.git
+git clone https://github.com/viweb25/viweb-frontend.git
+```
+
+From `viweb-local-stack`, start everything except the frontend with one command:
+
+```bash
+docker compose -f compose.yaml -f compose.separate.yaml up -d --build --wait
+```
+
+The override uses the sibling backend, database, and inference repositories.
+On first run it builds the CPU YOLO image, downloads a starter detector, and
+keeps it in a Docker volume. It uses `models/best.pt` when that file is present.
+
+In a second terminal, open `viweb-frontend` and run:
+
+```bash
+npm ci && npm run dev
+```
+
+Open **http://127.0.0.1:3000**, create an account, and choose **Start a part check**.
+Select and start the camera if the browser lists it. Otherwise open the
+manufacturer's camera viewer, start live video, and choose **Share camera window**
+in VI WebSync. Choose **Count parts**, select `person` and enter `1` for a starter
+test. Put one person in view and click **Capture & check**. Green boxes show
+detections. The photo border is green when the count matches and red when it
+differs. A saved JPEG works with **Upload image** and **Check this photo**.
+
+For a factory part, copy your reviewed, trusted checkpoint to `models/best.pt`
+and switch inference to it:
+
+```bash
+docker compose -f compose.yaml -f compose.separate.yaml restart inference
+```
+
+Click **Refresh model** in the dashboard and select a class from that checkpoint.
+Industrial cameras that only work through their vendor software use the window
+sharing path for this workflow. Exact SDK integration depends on the camera model.
