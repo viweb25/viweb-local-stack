@@ -147,8 +147,8 @@ npm ci && npm run dev
 Open **http://127.0.0.1:3000**, create an account, and choose **Start a part check**.
 Select and start the camera if the browser lists it. Otherwise open the
 manufacturer's camera viewer, start live video, and choose **Share camera window**
-in VI WebSync. Choose **Count parts**, select `person` and enter `1` for a starter
-test. Put one person in view and click **Capture & check**. Green boxes show
+in VI WebSync. Choose **Count parts**, then click **Use person demo** to select `person` and
+an expected count of `1`. Put one person in view and click **Capture & check**. Green boxes show
 detections. The photo border is green when the count matches and red when it
 differs. A saved JPEG works with **Upload image** and **Check this photo**.
 
