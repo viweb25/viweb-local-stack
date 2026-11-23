@@ -54,6 +54,11 @@ def main():
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--batch", type=int, default=8)
+    parser.add_argument(
+        "--from-scratch",
+        action="store_true",
+        help="Initialize YOLO11n without pretrained weights.",
+    )
     args = parser.parse_args()
     try:
         config = dataset_config(args.data.resolve())
@@ -68,11 +73,12 @@ def main():
     with TemporaryDirectory() as directory:
         manifest = Path(directory) / "data.yaml"
         manifest.write_text(yaml.safe_dump(config))
-        model = YOLO("yolo11n.pt")
+        model = YOLO("yolo11n.yaml" if args.from_scratch else "yolo11n.pt")
         model.train(
             data=str(manifest),
             project=str(args.runs),
-            name="object-detection",
+            name="object-detection-scratch" if args.from_scratch else "object-detection",
+            pretrained=not args.from_scratch,
             epochs=args.epochs,
             imgsz=args.imgsz,
             device=args.device,

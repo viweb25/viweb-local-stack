@@ -162,3 +162,44 @@ docker compose -f compose.yaml -f compose.separate.yaml restart inference
 Click **Refresh model** in the dashboard and select a class from that checkpoint.
 Industrial cameras that only work through their vendor software use the window
 sharing path for this workflow. Exact SDK integration depends on the camera model.
+
+## Train your own detector
+
+Start with fine-tuning to learn factory-specific classes from your own camera
+images. The trainer starts from Ultralytics' COCO-trained YOLO11n weights and
+learns the classes from your bounding-box labels. Example photos saved as
+PASS or FAIL in the dashboard have image-level labels. The detector needs a
+class and a bounding box for each visible part.
+
+For example, if the export has `train/images`, `valid/images`, and
+`test/images` folders, its `datasets/data.yaml` for one part class can look
+like this:
+
+```yaml
+path: .
+train: train/images
+val: valid/images
+test: test/images
+names:
+  0: cap
+```
+
+Keep the sibling `labels` directory for each split and use the class IDs from
+your export. Omit `test` if your export has only training and validation splits.
+
+For the sibling repositories, run the trainer from `viweb-local-stack`:
+
+```bash
+docker compose -f compose.yaml -f compose.separate.yaml --profile training run --build --rm trainer
+```
+
+Add `--epochs 1` to verify the pipeline or `--from-scratch` to start with
+randomly initialized weights. Both modes use the YOLO11n architecture and
+produce a deployable `weights/best.pt`. Training from scratch typically needs
+more labeled data and compute. Compare both approaches on the same held-out
+production batches before choosing a model. Measure missed parts, extra
+detections, incorrect pass/fail decisions, and inference time at the station.
+
+A proprietary architecture would be a separate development effort. Use the
+fine-tuned detector as a baseline, then use its measured failure cases and
+latency to define what a new design should improve.
