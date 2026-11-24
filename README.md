@@ -144,7 +144,7 @@ In a second terminal, open `viweb-frontend` and run:
 npm ci && npm run dev
 ```
 
-Open **http://127.0.0.1:3000**, create an account, and choose **Start a part check**.
+Open **http://127.0.0.1:3000**, create an account, and choose **Sample inspection**.
 Select and start the camera if the browser lists it. Otherwise open the
 manufacturer's camera viewer, start live video, and choose **Share camera window**
 in VI WebSync. Choose **Count parts**, then click **Use person demo** to select `person` and
@@ -224,3 +224,42 @@ that class. A custom checkpoint lists the classes it was trained to detect.
 [Hugging Face hosts the Qwen model card and original weights](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct).
 The local stack runs Qwen through Ollama and sends photos only to the local
 services.
+
+## Saved training datasets
+
+In the dashboard, open **Models → Train a model**, name one part, and add JPEG or PNG
+photos in one or more batches. Use the gallery to draw boxes around the part
+or confirm that a photo has none. Click **Save draft** at any point and
+reopen the dataset to continue. Each dataset supports up to 200 photos of
+5 MiB each.
+
+Migration `0006` adds organisation-owned `training_datasets` and their
+`training_photos`. PostgreSQL stores photo metadata, normalized box coordinates,
+review status, and the dataset revision. The API stores photo files in the
+private volume at `VI_TRAINING_IMAGE_DIR` and checks organisation membership
+before delivering them. Keep that directory on durable storage. Uploaded files
+from abandoned saves may remain in the directory. Cloud object storage is
+a separate deployment step.
+
+### Train from the dashboard
+
+Start the updated API and training worker from this directory:
+
+```bash
+docker compose -f compose.yaml -f compose.separate.yaml --profile vision up -d --build --wait api training-worker
+```
+
+Save at least four different reviewed photos, including two with the target
+part, then choose **Save and train** to submit the whole set. Four photos
+enable a pipeline check. Use a
+broader set of production examples to evaluate model quality. The worker
+snapshots the saved revision, holds some photos back for validation, converts
+the drawn boxes into YOLO detection labels, and fine-tunes pretrained YOLO11n.
+It runs 20 CPU epochs by default. Set `VI_TRAINING_EPOCHS` for local testing.
+
+The dashboard shows queued, training, completed, or failed. A completed job
+appears in **Models → Test a model** for the selected photo set. Select a
+completed run, add a fresh photo, and click **Run test** to see its
+detections. You can also download the selected `best.pt`. The training
+runs volume stores the checkpoint and trainer output. Production activation
+is a subsequent step.

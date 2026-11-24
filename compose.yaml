@@ -45,11 +45,13 @@ services:
       context: ${INFERENCE_CONTEXT:-./inference}
       target: ${INFERENCE_TARGET:-default}
     environment:
+      VI_TRAINING_RUN_DIR: /var/lib/viweb-training
       VI_YOLO_WEIGHTS: ${VI_YOLO_WEIGHTS:-/models/best.pt}
       VI_DEMO_OLLAMA_URL: ${VI_DEMO_OLLAMA_URL:-http://ollama:11434}
       VI_DEMO_VISION_MODEL: ${VI_DEMO_VISION_MODEL:-qwen2.5vl:3b}
     volumes:
       - ./models:/models:ro
+      - training-runs:/var/lib/viweb-training:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health/live', timeout=2)"]
       interval: 3s
@@ -64,8 +66,11 @@ services:
       INFERENCE_URL: http://inference:8001
       APP_ORIGIN: http://127.0.0.1:3000
       VI_DEMO_IMAGE_DIR: /var/lib/viweb-demo
+      VI_TRAINING_IMAGE_DIR: /var/lib/viweb-demo/training
+      VI_TRAINING_RUN_DIR: /var/lib/viweb-training
     volumes:
       - examples:/var/lib/viweb-demo
+      - training-runs:/var/lib/viweb-training:ro
     ports:
       - "127.0.0.1:8000:8000"
     command: ["uvicorn", "vi_api.bootstrap:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -90,6 +95,25 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  training-worker:
+    build:
+      context: ${INFERENCE_CONTEXT:-./inference}
+      target: yolo
+    init: true
+    restart: unless-stopped
+    command: ["python", "-m", "vi_inference.training_worker"]
+    environment:
+      DATABASE_URL: *database-url
+      VI_TRAINING_IMAGE_DIR: /var/lib/viweb-demo/training
+      VI_TRAINING_RUN_DIR: /var/lib/viweb-training
+      VI_TRAINING_EPOCHS: ${VI_TRAINING_EPOCHS:-20}
+    volumes:
+      - examples:/var/lib/viweb-demo:ro
+      - training-runs:/var/lib/viweb-training
+    depends_on:
       migrate:
         condition: service_completed_successfully
 
@@ -119,4 +143,5 @@ services:
 volumes:
   postgres:
   examples:
+  training-runs:
   ollama:

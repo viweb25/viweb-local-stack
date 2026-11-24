@@ -10,7 +10,7 @@ ENV PATH="/workspace/.venv/bin:$PATH"
 COPY ai ai
 COPY packages packages
 COPY services services
-RUN useradd --uid 10001 --create-home platform && install -d -m 0700 -o platform /var/lib/viweb-demo
+RUN useradd --uid 10001 --create-home platform && install -d -m 0700 -o platform /var/lib/viweb-demo /var/lib/viweb-training
 USER platform
 
 CMD ["uvicorn", "vi_inference.main:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -2,13 +2,14 @@ import asyncio
 import logging
 import os
 from collections import Counter
-from functools import cache
+from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 from threading import Lock
 from typing import Annotated, Literal
+from uuid import UUID
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
@@ -37,7 +38,7 @@ class DetectionResult(InspectionResult):
     detections: list[Detection] = Field(default_factory=list)
 
 
-@cache
+@lru_cache(maxsize=4)
 def load_model(weights: str):
     from ultralytics import YOLO
 
@@ -206,3 +207,26 @@ async def analyze_image(
     )
     result.description = description
     return result
+
+
+@router.post("/trained-models/{org_id}/{job_id}/preview", response_model=list[Detection])
+async def preview_trained_model(
+    org_id: UUID,
+    job_id: UUID,
+    request: Request,
+    confidence: Annotated[float, Query(ge=0.01, le=1)] = 0.5,
+):
+    run_dir = os.getenv("VI_TRAINING_RUN_DIR")
+    if not run_dir:
+        raise HTTPException(404, "Trained model unavailable")
+    checkpoint = Path(run_dir) / str(org_id) / str(job_id) / "best.pt"
+    if not checkpoint.is_file():
+        raise HTTPException(404, "Trained model unavailable")
+    try:
+        image = await read_jpeg(request)
+        return await run_in_threadpool(detect, str(checkpoint), image, None, confidence)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Trained YOLO model preview failed")
+        raise HTTPException(503, "Could not run the trained model") from exc

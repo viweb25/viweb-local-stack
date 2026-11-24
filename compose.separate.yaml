@@ -58,6 +58,9 @@ services:
                 Path(starter.name).replace(starter)
             print("Starter detector ready. Choose person for a camera test.")
 
+  training-worker:
+    <<: *yolo-image
+
   trainer:
     build:
       context: ../viweb-inference

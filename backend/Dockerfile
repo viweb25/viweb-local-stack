@@ -9,5 +9,5 @@ RUN uv sync --frozen --no-dev
 ENV PATH="/workspace/.venv/bin:$PATH"
 COPY packages packages
 COPY services services
-RUN useradd --uid 10001 --create-home platform && install -d -m 0700 -o platform /var/lib/viweb-demo
+RUN useradd --uid 10001 --create-home platform && install -d -m 0700 -o platform /var/lib/viweb-demo /var/lib/viweb-training
 USER platform
