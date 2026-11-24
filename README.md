@@ -203,3 +203,24 @@ detections, incorrect pass/fail decisions, and inference time at the station.
 A proprietary architecture would be a separate development effort. Use the
 fine-tuned detector as a baseline, then use its measured failure cases and
 latency to define what a new design should improve.
+
+## Analyze a photo with YOLO and Qwen
+
+From `viweb-local-stack`, with the sibling repositories available:
+
+```bash
+docker compose -f compose.yaml -f compose.separate.yaml --profile vision up -d --build --wait
+docker compose -f compose.yaml -f compose.separate.yaml --profile vision exec ollama ollama pull qwen2.5vl:3b
+```
+
+In **Check parts**, set **Check type** to **Analyze image**. Upload a photo
+to analyze it, or start a camera and click **Capture & analyze**. YOLO draws boxes and groups counts by class. Qwen provides a scene
+description. This mode reports observations without applying a pass/fail rule.
+
+The starter YOLO checkpoint recognizes its COCO classes, including people and
+cars. To return a factory class such as `cap`, load a checkpoint trained with
+that class. A custom checkpoint lists the classes it was trained to detect.
+
+[Hugging Face hosts the Qwen model card and original weights](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct).
+The local stack runs Qwen through Ollama and sends photos only to the local
+services.

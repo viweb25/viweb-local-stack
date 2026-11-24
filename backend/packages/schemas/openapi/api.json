@@ -747,7 +747,8 @@
             "schema": {
               "enum": [
                 "inspect",
-                "detect"
+                "detect",
+                "analyze"
               ],
               "title": "Engine",
               "type": "string"

@@ -156,6 +156,62 @@
         "title": "Health",
         "type": "object"
       },
+      "ImageAnalysis": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "description": {
+            "$ref": "#/components/schemas/SceneDescription"
+          },
+          "detection_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detection Error"
+          },
+          "detections": {
+            "items": {
+              "$ref": "#/components/schemas/Detection"
+            },
+            "title": "Detections",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "title": "ImageAnalysis",
+        "type": "object"
+      },
       "InspectionResult": {
         "properties": {
           "decision": {
@@ -226,6 +282,45 @@
         "title": "ModelInfo",
         "type": "object"
       },
+      "SceneDescription": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "title": "SceneDescription",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -267,6 +362,62 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/demo/analyze": {
+      "post": {
+        "operationId": "analyze_image_api_v1_demo_analyze_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "confidence",
+            "required": false,
+            "schema": {
+              "default": 0.5,
+              "maximum": 1,
+              "minimum": 0.01,
+              "title": "Confidence",
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageAnalysis"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analyze Image",
+        "tags": [
+          "Object detection"
+        ]
+      }
+    },
     "/api/v1/demo/detect": {
       "post": {
         "operationId": "inspect_objects_api_v1_demo_detect_post",

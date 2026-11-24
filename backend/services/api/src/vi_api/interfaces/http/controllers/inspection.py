@@ -22,7 +22,7 @@ MAX_FRAME_BYTES = 5 * 1024 * 1024
     },
 )
 async def inspect(
-    engine: Literal["inspect", "detect"],
+    engine: Literal["inspect", "detect", "analyze"],
     request: Request,
     settings: SettingsDependency,
     origin: BrowserOrigin,

@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from vi_inference import object_detection
+from vi_inference import demo_inspection, object_detection
 from vi_inference.main import app
 
 URL = "/api/v1/demo/detect?target=cap&expected_count=1"
@@ -49,3 +49,38 @@ def test_detection_model_lists_checkpoint_classes(monkeypatch, tmp_path):
     }
     weights.unlink()
     assert client.get("/api/v1/demo/detection-model").json()["status"] == "missing"
+
+
+def test_analyze_groups_detections_and_keeps_counts_when_qwen_is_missing(monkeypatch, tmp_path):
+    weights = tmp_path / "best.pt"
+    weights.touch()
+    monkeypatch.setenv("VI_YOLO_WEIGHTS", str(weights))
+
+    def detect(model_path, image, target, confidence):
+        assert model_path == str(weights)
+        assert target is None
+        return [
+            object_detection.Detection(label=label, confidence=0.9, x1=0, y1=0, x2=1, y2=1)
+            for label in ("person", "car", "person")
+        ]
+
+    async def chat(endpoint, payload):
+        assert payload["messages"][-1]["images"]
+        return "People are next to a car."
+
+    monkeypatch.setattr(object_detection, "detect", detect)
+    monkeypatch.setattr(demo_inspection, "chat", chat)
+    monkeypatch.setenv("VI_DEMO_OLLAMA_URL", "http://ollama:11434")
+
+    client = TestClient(app)
+    frame = b"\xff\xd8\xfftest\xff\xd9"
+    headers = {"Content-Type": "image/jpeg"}
+    result = client.post("/api/v1/demo/analyze", headers=headers, content=frame).json()
+    assert result["counts"] == {"person": 2, "car": 1}
+    assert len(result["detections"]) == 3
+    assert result["description"]["text"] == "People are next to a car."
+
+    monkeypatch.delenv("VI_DEMO_OLLAMA_URL")
+    result = client.post("/api/v1/demo/analyze", headers=headers, content=frame).json()
+    assert result["counts"] == {"person": 2, "car": 1}
+    assert result["description"]["error"] == "Vision model is not configured."

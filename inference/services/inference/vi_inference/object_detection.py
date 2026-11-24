@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import os
+from collections import Counter
 from functools import cache
 from io import BytesIO
 from pathlib import Path
@@ -10,7 +12,12 @@ from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from vi_inference.demo_inspection import InspectionResult, read_jpeg
+from vi_inference.demo_inspection import (
+    InspectionResult,
+    SceneDescription,
+    describe_scene,
+    read_jpeg,
+)
 
 router = APIRouter(prefix="/api/v1/demo", tags=["Object detection"])
 logger = logging.getLogger(__name__)
@@ -66,7 +73,7 @@ async def detection_model():
     return ModelInfo(status="ready", model=weights.name, classes=classes)
 
 
-def detect(weights: str, image: bytes, target: str, confidence: float) -> list[Detection]:
+def detect(weights: str, image: bytes, target: str | None, confidence: float) -> list[Detection]:
     from PIL import Image
 
     with Image.open(BytesIO(image), formats=["JPEG"]) as source:
@@ -75,17 +82,31 @@ def detect(weights: str, image: bytes, target: str, confidence: float) -> list[D
         frame = source.convert("RGB")
     with model_lock:
         model = load_model(weights)
-        if target not in model.names.values():
+        if target is not None and target not in model.names.values():
             raise ValueError("Target class is missing from the configured model")
-        class_ids = [index for index, label in model.names.items() if label == target]
+        class_ids = (
+            None
+            if target is None
+            else [index for index, label in model.names.items() if label == target]
+        )
         prediction = model.predict(
             frame, conf=confidence, classes=class_ids, max_det=1000, verbose=False
         )[0]
         boxes = prediction.boxes
         return [
-            Detection(label=target, confidence=score, x1=x1, y1=y1, x2=x2, y2=y2)
-            for (x1, y1, x2, y2), score in zip(
-                boxes.xyxyn.cpu().tolist(), boxes.conf.cpu().tolist(), strict=True
+            Detection(
+                label=prediction.names[int(class_id)],
+                confidence=score,
+                x1=x1,
+                y1=y1,
+                x2=x2,
+                y2=y2,
+            )
+            for (x1, y1, x2, y2), score, class_id in zip(
+                boxes.xyxyn.cpu().tolist(),
+                boxes.conf.cpu().tolist(),
+                boxes.cls.cpu().tolist(),
+                strict=True,
             )
             if x2 > x1 and y2 > y1
         ]
@@ -132,3 +153,56 @@ async def inspect_objects(
         model=weights.name,
         detections=detections,
     )
+
+
+class ImageAnalysis(BaseModel):
+    detections: list[Detection] = Field(default_factory=list)
+    counts: dict[str, int] = Field(default_factory=dict)
+    model: str | None = None
+    detection_error: str | None = None
+    description: SceneDescription = Field(default_factory=SceneDescription)
+    error: str | None = None
+
+
+async def detect_scene(image: bytes, confidence: float) -> ImageAnalysis:
+    weights = configured_weights()
+    if weights is None:
+        return ImageAnalysis(detection_error="Local YOLO model is not configured.")
+    try:
+        detections = await run_in_threadpool(detect, str(weights), image, None, confidence)
+    except Exception:
+        logger.exception("YOLO image analysis failed")
+        return ImageAnalysis(
+            model=weights.name, detection_error="YOLO could not process the image."
+        )
+    return ImageAnalysis(
+        detections=detections,
+        counts=dict(Counter(box.label for box in detections)),
+        model=weights.name,
+    )
+
+
+@router.post(
+    "/analyze",
+    response_model=ImageAnalysis,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}},
+        }
+    },
+)
+async def analyze_image(
+    request: Request,
+    confidence: Annotated[float, Query(ge=0.01, le=1)] = 0.5,
+):
+    try:
+        image = await read_jpeg(request)
+    except ValueError as exc:
+        return ImageAnalysis(error=str(exc))
+
+    result, description = await asyncio.gather(
+        detect_scene(image, confidence), describe_scene(image)
+    )
+    result.description = description
+    return result
