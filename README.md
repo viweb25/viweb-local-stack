@@ -144,13 +144,18 @@ In a second terminal, open `viweb-frontend` and run:
 npm ci && npm run dev
 ```
 
-Open **http://127.0.0.1:3000**, create an account, and choose **Sample inspection**.
-Select and start the camera if the browser lists it. Otherwise open the
-manufacturer's camera viewer, start live video, and choose **Share camera window**
-in VI WebSync. Choose **Count parts**, then click **Use person demo** to select `person` and
-an expected count of `1`. Put one person in view and click **Capture & check**. Green boxes show
-detections. The photo border is green when the count matches and red when it
-differs. A saved JPEG works with **Upload image** and **Check this photo**.
+Open **http://127.0.0.1:3000** (use exactly this address; the API checks the
+browser origin) and choose **Sign up**. Then:
+
+1. **New project** → **Tell good from defective** → quick start **Bottle caps** → **Create project**.
+2. **Upload** good photos, defective photos and a few empty photos, all mixed.
+3. **Label**: the guide above each photo asks "What do you see?". Click the class,
+   drag a box around the item, then **No, this photo is done. Next photo**.
+4. **Train**: check the "Before you start" list, choose **Balanced**, press **Start training**.
+5. **Test**: upload a new photo or start the camera. The result shows **PASS** or **FAIL**.
+
+To update later, run `git pull` in each repository and repeat the
+`docker compose -f compose.yaml -f compose.separate.yaml up -d --build --wait` command.
 
 For a factory part, copy your reviewed, trusted checkpoint to `models/best.pt`
 and switch inference to it:
